@@ -45,6 +45,7 @@
 class web {
   class { 'configurejava': }
   class { 'configuretomcat': }
+  class { 'nagios': }
 }
 
 class configurejava {
@@ -70,3 +71,67 @@ class configuretomcat {
   }
 }
 
+class nagios {
+    include nagios::install
+    include nagios::service
+    include nagios::import
+    include nagios::export
+}
+
+class nagios::install {
+   package { ['nagios', 'nagios-plugins', 'nagios-nrpe-plugin' ]:
+              ensure => present,
+   }
+}
+
+class nagios::service {
+
+    exec { 'fix-permissions':
+      command  => "find /etc/nagios3/conf.d -type f -name '*cfg' | xargs chmod +r",
+      refreshonly =>true,
+    }
+
+    service { 'nagios':
+      ensure => running,
+      enable => true,
+      require => Class[ 'nagios::install' ],
+    }
+}
+
+class nagios::import {
+  Nagios_host <<||>> {
+    require => Class[ 'nagios::install' ],
+    notify  => Class[ 'nagios::service' ]
+  }
+
+  Nagios_service <<||>> {
+     require => Class[ 'nagios::install' ],
+     notify  => Class[ 'nagios::service' ]
+  }
+}
+
+
+class nagios::nrpe {
+    package {['nagios-nrpe-server', 'nagios-plugins' ]:
+      ensure => present,
+    }
+
+    service { 'nagios-nrpe-server':
+      ensure => running,
+      enable => true,
+      require => Package[ 'nagios-nrpe-server', 'nagios-plugins' ],
+    }
+
+}
+
+class nagios::export {
+   @@nagios_host { $::hostname :
+        ensure => present,
+        address => $::ipaddress,
+        use  => 'generic-host',
+        check_command  => 'check-host-alive',
+        hostgroups => 'all-servers',
+        target  => "/etc/nagios/conf.d/${::hostname}.cfg",
+    }
+}
+ 
