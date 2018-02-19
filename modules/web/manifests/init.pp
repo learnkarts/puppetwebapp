@@ -64,9 +64,9 @@ class configuretomcat {
   tomcat::instance { 'default':
     catalina_home => '/opt/tomcat',
   }
-  tomcat::war { 'sample.war':
+  tomcat::war { 'ROOT.war':
     catalina_base => '/opt/tomcat',
-    war_source    => 'https://tomcat.apache.org/tomcat-7.0-doc/appdev/sample/sample.war',
+    war_source    => 'https://s3.amazonaws.com/learnkarts-ram/notificationapp-latest.war',
   }
 }
 
